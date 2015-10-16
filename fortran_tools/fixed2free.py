@@ -31,13 +31,14 @@ class Fixed2Free(object):
     #exponent regex
     re_exponent_old = re.compile('([\d.]E)[\s]([\d]+)')
 
-    def __init__(self,input_filename,output_filename,style):
+    def __init__(self, input_filename, output_filename, style, no_trunc):
         '''
         Constructor
         '''
         self.input_filename=input_filename
         self.output_filename=output_filename
         self.style=style
+        self.no_truncation=no_trunc
 
 
 
@@ -53,6 +54,8 @@ class Fixed2Free(object):
         for i in xrange(len(source)):
             line = source[i]
             line = self.remove_new_line(line)
+            if(not self.no_truncation):
+                line = self.truncate_extra_linewidth(line)
             line = self.fix_comment(line)
             line = self.fix_exponents(line)
 
@@ -90,6 +93,12 @@ class Fixed2Free(object):
     @staticmethod
     def remove_new_line(line):
         return re.sub('[\r\n]','', line)
+
+    @staticmethod
+    def truncate_extra_linewidth(line):
+        if len(line) > 72:
+            line = line[:72]
+        return line
 
     @staticmethod
     def is_f77_comment(line):
@@ -189,13 +198,16 @@ class Fixed2Free(object):
         Constructor from command line arguments
         '''
         sys.argv = argv
-        parser = argparse.ArgumentParser(description='Process some integers.')
+        parser = argparse.ArgumentParser(description='Translate fixed form Fortran to free form Fortran.')
         parser.add_argument('input_filename', metavar='input_file', help='the input filename')
         parser.add_argument('output_filename', metavar='output_file', help='the output filename')
         parser.add_argument('--style', dest='style', action='store_const',
                             const=True,default="test", help='style option')
+        parser.add_argument('--no-trunc', dest='truncate', action='store_const',
+                            const=True, default=False,
+                            help='don\'t truncate input lines after 72nd column')
         args = parser.parse_args()
-        return cls(args.input_filename,args.output_filename,args.style)
+        return cls(args.input_filename,args.output_filename,args.style,args.truncate)
 
 if __name__ == '__main__':
     Fixed2Free.from_argv(sys.argv)
